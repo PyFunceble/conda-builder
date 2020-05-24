@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+set -e
+
+# We set the conda install dir.
+condaInstallDirs=(
+    "${HOME}/miniconda"
+    "${HOME}/miniconda3"
+    "/opt/miniconda"
+    "/opt/miniconda3"
+)
+
+# We get the package name to build.
+pkgName="${1,,}"
+# We get the version to use.
+pkgVersion="${2}"
+# We get the list of python version to
+# build or package with.
+pythonVersions=(
+    "3.6"
+    "3.7"
+)
+
+
+# We set the build dir.
+# We set the build output dir.
+buildOutputDir="${CONDA_BUILD_DIR}/conda_pkg"
+
+for condaInstallDir in ${condaInstallDirs[@]}
+do
+    if [[ -f ${condaInstallDir}/etc/profile.d/conda.sh  ]]
+    then
+        source ${condaInstallDir}/etc/profile.d/conda.sh
+        break
+    fi
+done
+
+hash conda
+
+# We create a new environment
+conda create -q -n build-environment python="${PYTHON_VERSION}"
+# We activate the newly created environment
+conda activate build-environment
+
+# We start to install everything needed (if they are not installed.)
+conda install -q -y anaconda-client conda-build conda-verify
+
+for version in ${pythonVersions[@]}
+do
+    # No we build the package we have to upload
+    conda-build --no-force-upload --no-anaconda-upload --output-folder="${buildOutputDir}" --python "${version}" "${CONDA_BUILD_DIR}"
+done
+
+for file in $(find ${buildOutputDir}/noarch -name '*.tar.bz2')
+do
+    # Finally, we upload everything.
+    anaconda -t "${ANACONDA_TOKEN}" upload --skip-existing ${file}
+done
