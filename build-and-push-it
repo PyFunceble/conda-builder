@@ -48,7 +48,7 @@ conda install -q -y anaconda-client conda-build conda-verify
 for version in ${pythonVersions[@]}
 do
     # No we build the package we have to upload
-    conda-build --no-force-upload --no-anaconda-upload --output-folder="${buildOutputDir}" --python "${version}" "${CONDA_BUILD_DIR}"
+    conda-build -c conda-forge -c pyfunceble --no-force-upload --no-anaconda-upload --output-folder="${buildOutputDir}" --python "${version}" "${CONDA_BUILD_DIR}"
 done
 
 for file in $(find ${buildOutputDir}/noarch -name '*.tar.bz2')
