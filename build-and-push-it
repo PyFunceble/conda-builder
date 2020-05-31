@@ -13,14 +13,7 @@ condaInstallDirs=(
 # We get the package name to build.
 pkgName="${1,,}"
 # We get the version to use.
-pkgVersion="${2}"
-# We get the list of python version to
-# build or package with.
-pythonVersions=(
-    "3.6"
-    "3.7"
-)
-
+pkgVersion="${2,,}"
 
 # We set the build dir.
 # We set the build output dir.
@@ -37,19 +30,25 @@ done
 
 hash conda
 
+if [[ ! -f "meta.yaml" ]]
+then
+    echo "Could not find meta.yaml."
+    exit 1
+fi
+
+sed -i -r "s/(\{%\s+set\s+name\s+=\s+\")(.*)(\"\s+%\})/\1${pkgName}\3/" "meta.yaml"
+sed -i -r "s/(\{%\s+set\s+version\s+=\s+\")(.*)(\"\s+%\})/\1${pkgVersion}\3/" "meta.yaml"
+
 # We create a new environment
-conda create -q -n build-environment python="${PYTHON_VERSION}"
+conda create -y -q -n build-environment python="${PYTHON_VERSION}"
 # We activate the newly created environment
 conda activate build-environment
 
 # We start to install everything needed (if they are not installed.)
 conda install -q -y anaconda-client conda-build conda-verify
 
-for version in ${pythonVersions[@]}
-do
-    # No we build the package we have to upload
-    conda-build -c pyfunceble --no-force-upload --no-anaconda-upload --output-folder="${buildOutputDir}" --python "${version}" "${CONDA_BUILD_DIR}"
-done
+# No we build the package we have to upload
+conda-build -c pyfunceble --no-force-upload --no-anaconda-upload --output-folder="${buildOutputDir}" "${@:3}" "${CONDA_BUILD_DIR}"
 
 for file in $(find ${buildOutputDir}/noarch -name '*.tar.bz2')
 do
